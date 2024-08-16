@@ -49,4 +49,3 @@ def unified_endpoint_connector(method: str, endpoint: str, base_url:str, params:
         return {"error": str(e)}
 
 
-#BASE URL is Hard coded, need to work on it.
