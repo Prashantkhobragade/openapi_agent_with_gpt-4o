@@ -25,6 +25,8 @@ base_url = st.sidebar.text_input("Enter Base URL or API URL")
 if 'base_url' not in st.session_state:
     st.session_state['base_url'] = base_url
 
+print("base url", base_url)
+
 # File uploader for JSON file
 uploaded_file = st.file_uploader("Choose a JSON file", type="json")
 
@@ -82,12 +84,12 @@ if uploaded_file is not None:
 
         interpret_user_request_task = Task(
             description="Listen to user request {request} Identify the Method, params and determine which API endpoint(s) would be most appropriate to fulfill their needs.",
-            expected_output = "For each user request, A clear interpretation of the user intention and Identification of most appropriate API endpoint(s) to fullfill the request."
+            expected_output = "For each user request, A clear interpretation of the user intention and Identification of most appropriate API endpoint(s) to fullfill the request.",
             agent=user_request_interpreter_agent
         )
 
         api_call_task = Task(
-            description="""analyze the output of previous Agents and Tasks, create appropriate endpoint. 
+            description="""analyze the output of previous Agents and Tasks, create a dynamic url based on params and appropriate endpoint.. 
                     Then, make a call to API. 
                     Ensure that errors are handled gracefully and return clear messages like if url is not found then return error: 404""",
             expected_output = "A clear message indicating the result of the API call, including any errors message if applicable",
