@@ -43,8 +43,8 @@ if uploaded_file is not None:
         # Define agents with optimized prompts
         openapi_analyst_agent = Agent(
             role="OpenAPI Analyst",
-            goal="Analyze OpenAPI spec {data} for API structure",
-            backstory="Expert API architect with 20 years of experience.",
+            goal="Analyze OpenAPI spec {data} for API structure and create a comprehensive understanding of the API structure",
+            backstory="Expert API architect with 20 years of experience.You are a seasoned API architect experienced in designing and documenting APIs",
             verbose=True,
             llm=llm,
             allow_delegation=False
@@ -52,8 +52,10 @@ if uploaded_file is not None:
 
         user_request_interpreter_agent = Agent(
             role="Request Interpreter",
-            goal="Match user request {request} to API endpoints",
-            backstory="NLP and API integration expert with 10 years of experience.",
+            goal="""Interpret user request {request}, identify the method, parameters, and match them to appropriate API endpoints based on 
+                    the OpenAPI specification.""",
+            backstory="""NLP and API integration expert with 10 years of experience. you excel at translating user requests into 
+                        structured data.""",
             tools=[unified_endpoint_connector],
             verbose=True,
             llm=llm,
@@ -62,8 +64,9 @@ if uploaded_file is not None:
 
         api_call_agent = Agent(
             role="API Caller",
-            goal="Make API calls using {base_url} and handle errors",
-            backstory="Experienced in diverse API integrations.",
+            goal="To efficiently and accurately interact with various API endpoints using the base url {base_url}. and handle error gracefully ",
+            backstory="""As a seasoned API Integration Specialist, I have extensive experience in working with diverse APIs across 
+                        multiple domains. My expertise lies in understanding API structures, authentication methods, and data formats.""",
             tools=[unified_endpoint_connector],
             verbose=True,
             llm=llm,
@@ -72,18 +75,22 @@ if uploaded_file is not None:
 
         # Define tasks with focused outputs
         analyze_openapi_task = Task(
-            description="Analyze OpenAPI JSON data",
-            expected_output = ,
+            description="Analyze OpenAPI JSON data. Understand all endpoints, their purposes, parameters, request bodies, and response structures.",
+            expected_output = "A comprehensive breakdown of the API structure, including List of all available endpoints with HTTP methods and purpose of each end point.",
             agent=openapi_analyst_agent
         )
 
         interpret_user_request_task = Task(
-            description="Interpret user request and match to API endpoint",
+            description="Listen to user request {request} Identify the Method, params and determine which API endpoint(s) would be most appropriate to fulfill their needs.",
+            expected_output = "For each user request, A clear interpretation of the user intention and Identification of most appropriate API endpoint(s) to fullfill the request."
             agent=user_request_interpreter_agent
         )
 
         api_call_task = Task(
-            description="Make API call and handle response",
+            description="""analyze the output of previous Agents and Tasks, create appropriate endpoint. 
+                    Then, make a call to API. 
+                    Ensure that errors are handled gracefully and return clear messages like if url is not found then return error: 404""",
+            expected_output = "A clear message indicating the result of the API call, including any errors message if applicable",
             agent=api_call_agent
         )
 
@@ -91,7 +98,7 @@ if uploaded_file is not None:
         crew = Crew(
             agents=[openapi_analyst_agent, user_request_interpreter_agent, api_call_agent],
             tasks=[analyze_openapi_task, interpret_user_request_task, api_call_task],
-            process=Process.parallel,
+            process=Process.sequential,
             verbose=True
         )
 
