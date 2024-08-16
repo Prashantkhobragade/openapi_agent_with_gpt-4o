@@ -73,6 +73,7 @@ if uploaded_file is not None:
         # Define tasks with focused outputs
         analyze_openapi_task = Task(
             description="Analyze OpenAPI JSON data",
+            expected_output = ,
             agent=openapi_analyst_agent
         )
 

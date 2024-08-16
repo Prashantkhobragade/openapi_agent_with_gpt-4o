@@ -1,0 +1,10 @@
+applications:
+- name: smartapiconnect-2
+  random-route : true
+  path: ./
+  memory: 2048M
+  buildpacks:
+  - python_buildpack
+  command:  streamlit run st_app.py --server.port 8080
+  services:
+    - aicore 
