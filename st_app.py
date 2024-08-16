@@ -41,26 +41,20 @@ if uploaded_file is not None:
     if data:
         # Initialize LLM
         llm = azure_ai.get_client()
-
+        
         # Define agents with optimized prompts
-        openapi_analyst_agent = Agent(
-            role="OpenAPI Analyst",
-            goal="Analyze OpenAPI spec {data} for API structure and create a comprehensive understanding of the API structure",
-            backstory="Expert API architect with 20 years of experience.You are a seasoned API architect experienced in designing and documenting APIs",
-            verbose=True,
-            llm=llm,
-            allow_delegation=False
-        )
 
-        request_interpreter_caller_agent = Agent(
-            role="API Request Interpreter and Caller",
-            goal="""Interpret user request {request}, identify appropriate API endpoints based on the OpenAPI specification, 
-            and efficiently interact with these endpoints using the base url {base_url}. Handle all aspects 
-            of the API interaction process, from interpretation to call execution, including error handling.""",
-            backstory="""As a versatile API specialist with over 10 years of experience, I excel in natural language 
-                processing, API integration, and data structure comprehension. My expertise spans from 
-                translating user requests into structured data to seamlessly interacting with diverse APIs 
-                across multiple domains.""",
+        api_smartconnect_agent = Agent(
+            role="API Analyst and Caller",
+            goal="""Analyze OpenAPI spec {data} for API structure, interpret user request {request}, 
+                    identify appropriate API endpoints, and efficiently interact with these endpoints using 
+                    the base url {base_url}. Handle all aspects of the API interaction process, from analysis 
+                    to interpretation to call execution, including error handling.""",
+            backstory="""As a versatile API specialist with over 20 years of experience, I excel in 
+                    API architecture, natural language processing, API integration, and data structure 
+                    comprehension. My expertise spans from analyzing API specifications and translating user 
+                    requests into structured data to seamlessly interacting with diverse APIs across multiple 
+                    domains.""",
             tools=[unified_endpoint_connector],
             verbose=True,
             llm=llm,
@@ -68,33 +62,27 @@ if uploaded_file is not None:
         )
 
         # Define tasks with focused outputs
-        analyze_openapi_task = Task(
-            description="Analyze OpenAPI JSON data. Understand all endpoints, their purposes, parameters, request bodies, and response structures.",
-            expected_output = "A comprehensive breakdown of the API structure, including List of all available endpoints with HTTP methods and purpose of each end point.",
-            agent=openapi_analyst_agent
+
+        api_smartconnect_task = Task(
+            description="""1. Analyze OpenAPI JSON data. Understand all endpoints, their purposes, parameters, request bodies, and response structures.
+                        2. Interpret the user request {request}.
+                        3. Identify the method, parameters, and determine which API endpoint(s) would be most appropriate to fulfill the user's needs.
+                        4. Create a dynamic URL based on the identified parameters and appropriate endpoint.
+                        5. Make the API call using the constructed URL.
+                        6. Handle any errors gracefully, providing clear error messages (e.g., "Error 404: URL not found" for 404 errors).
+                        7. Return the results of the API call or error message as appropriate.""",
+            expected_output=""" The result of the API call. This should include::
+                    - The constructed URL
+                    - The result of the API call OR a clear error message if applicable""",
+            agent=api_smartconnect_agent
         )
 
-        request_interpreter_caller_task = Task(
-            description="""1. Interpret the user request {request}. 
-                        2. Identify the method, parameters, and determine which API endpoint(s) would be most appropriate to fulfill the user's needs.
-                        3. Create a dynamic URL based on the identified parameters and appropriate endpoint.
-                        4. Make the API call using the constructed URL.
-                        5. Handle any errors gracefully, providing clear error messages (e.g., "Error 404: URL not found" for 404 errors).
-                        6. Return the results of the API call or error message as appropriate.""",
-            expected_output="""A clear interpretation of the user's intention, identification of the most appropriate 
-                       API endpoint(s), and the result of the API call. This should include:
-                       - The interpreted request
-                       - The identified API endpoint(s)
-                       - The constructed URL
-                       - The result of the API call OR a clear error message if applicable""",
-            agent=request_interpreter_caller_agent
-        )
 
         # Create crew with parallel processing
         crew = Crew(
-            agents=[openapi_analyst_agent, request_interpreter_caller_agent],
-            tasks=[analyze_openapi_task, request_interpreter_caller_task],
-            process=Process.sequential,
+            agents=[api_smartconnect_agent],
+            tasks=[api_smartconnect_task],
+            #process=Process.sequential,
             verbose=True
         )
 
