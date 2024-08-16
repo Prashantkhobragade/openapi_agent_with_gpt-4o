@@ -6,3 +6,4 @@ crewai[tools]
 streamlit
 cfenv
 langchain_openai
+cfenv
