@@ -52,23 +52,15 @@ if uploaded_file is not None:
             allow_delegation=False
         )
 
-        user_request_interpreter_agent = Agent(
-            role="Request Interpreter",
-            goal="""Interpret user request {request}, identify the method, parameters, and match them to appropriate API endpoints based on 
-                    the OpenAPI specification.""",
-            backstory="""NLP and API integration expert with 10 years of experience. you excel at translating user requests into 
-                        structured data.""",
-            tools=[unified_endpoint_connector],
-            verbose=True,
-            llm=llm,
-            allow_delegation=False
-        )
-
-        api_call_agent = Agent(
-            role="API Caller",
-            goal="To efficiently and accurately interact with various API endpoints using the base url {base_url}. and handle error gracefully ",
-            backstory="""As a seasoned API Integration Specialist, I have extensive experience in working with diverse APIs across 
-                        multiple domains. My expertise lies in understanding API structures, authentication methods, and data formats.""",
+        request_interpreter_caller_agent = Agent(
+            role="API Request Interpreter and Caller",
+            goal="""Interpret user request {request}, identify appropriate API endpoints based on the OpenAPI specification, 
+            and efficiently interact with these endpoints using the base url {base_url}. Handle all aspects 
+            of the API interaction process, from interpretation to call execution, including error handling.""",
+            backstory="""As a versatile API specialist with over 10 years of experience, I excel in natural language 
+                processing, API integration, and data structure comprehension. My expertise spans from 
+                translating user requests into structured data to seamlessly interacting with diverse APIs 
+                across multiple domains.""",
             tools=[unified_endpoint_connector],
             verbose=True,
             llm=llm,
@@ -82,24 +74,26 @@ if uploaded_file is not None:
             agent=openapi_analyst_agent
         )
 
-        interpret_user_request_task = Task(
-            description="Listen to user request {request} Identify the Method, params and determine which API endpoint(s) would be most appropriate to fulfill their needs.",
-            expected_output = "For each user request, A clear interpretation of the user intention and Identification of most appropriate API endpoint(s) to fullfill the request.",
-            agent=user_request_interpreter_agent
-        )
-
-        api_call_task = Task(
-            description="""analyze the output of previous Agents and Tasks, create a dynamic url based on params and appropriate endpoint.. 
-                    Then, make a call to API. 
-                    Ensure that errors are handled gracefully and return clear messages like if url is not found then return error: 404""",
-            expected_output = "A clear message indicating the result of the API call, including any errors message if applicable",
-            agent=api_call_agent
+        request_interpreter_caller_task = Task(
+            description="""1. Interpret the user request {request}. 
+                        2. Identify the method, parameters, and determine which API endpoint(s) would be most appropriate to fulfill the user's needs.
+                        3. Create a dynamic URL based on the identified parameters and appropriate endpoint.
+                        4. Make the API call using the constructed URL.
+                        5. Handle any errors gracefully, providing clear error messages (e.g., "Error 404: URL not found" for 404 errors).
+                        6. Return the results of the API call or error message as appropriate.""",
+            expected_output="""A clear interpretation of the user's intention, identification of the most appropriate 
+                       API endpoint(s), and the result of the API call. This should include:
+                       - The interpreted request
+                       - The identified API endpoint(s)
+                       - The constructed URL
+                       - The result of the API call OR a clear error message if applicable""",
+            agent=request_interpreter_caller_agent
         )
 
         # Create crew with parallel processing
         crew = Crew(
-            agents=[openapi_analyst_agent, user_request_interpreter_agent, api_call_agent],
-            tasks=[analyze_openapi_task, interpret_user_request_task, api_call_task],
+            agents=[openapi_analyst_agent, request_interpreter_caller_agent],
+            tasks=[analyze_openapi_task, request_interpreter_caller_task],
             process=Process.sequential,
             verbose=True
         )
